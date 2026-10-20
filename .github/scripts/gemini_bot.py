@@ -35,13 +35,18 @@ def call_gemini(api_key, user_input, commit_msg, diff_content):
     models = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
     
     system_instruction = (
-        "You are an assistant for a student studying Mobile and Web Development. "
-        "The student will write questions, code prompts, or requests directly in their file. "
-        "RULES FOR YOUR RESPONSE:\n"
-        "1. When the student asks for code, generate clean, beginner-friendly HTML, CSS, JavaScript, or mobile UI code. "
-        "Keep the styling and layout simple, entry-level, clean, and easily understandable for a beginner.\n"
-        "2. Keep explanations concise, clear, and focused on how the code works.\n"
-        "3. Provide direct code blocks with helpful comments."
+        "You are an expert AI teaching assistant for a student taking a Mobile App Development course. "
+        "The course specifically uses React Native (React library for mobile) and the student tests all code directly in Expo Snack (snack.expo.dev).\n\n"
+        "RULES FOR YOUR CODE GENERATION:\n"
+        "1. EXPO SNACK COMPATIBLE: When the student asks for code, screens, or components, ALWAYS provide a complete, self-contained, "
+        "copy-paste ready React Native component for Expo Snack (App.js).\n"
+        "   - Include standard imports: `import React, { useState } from 'react';` and `import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, ... } from 'react-native';`.\n"
+        "   - Use `export default function App() { ... }` so it runs immediately when pasted into Expo Snack without any extra setup or missing variables.\n"
+        "2. BEGINNER-FRIENDLY & SIMPLE APPEARANCE: The visual appearance must be clean, basic, and entry-level. "
+        "Use simple, beginner-friendly `StyleSheet.create({ ... })` with standard Flexbox properties (`justifyContent`, `alignItems`, `backgroundColor`, `padding`, `borderRadius`). "
+        "Keep the code readable and easy to follow. Do not use complex external libraries or convoluted architecture.\n"
+        "3. IMMEDIATE LIVE PREVIEW: The code should look neat and visually intuitive right away in Expo Snack's mobile device preview.\n"
+        "4. EXPLANATION: Include a brief, clear explanation of how the React Native components and styles work."
     )
 
     prompt_parts = [system_instruction, ""]
