@@ -31,8 +31,7 @@ def read_target_content():
     return ""
 
 def call_gemini(api_key, user_input, commit_msg, diff_content):
-    # Fastest model first: gemini-3.1-flash-lite (lowest latency), then gemini-3.5-flash
-    models = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+    models = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.1-flash-lite"]
     
     system_instruction = (
         "You are an expert AI teaching assistant for a student taking a Mobile App Development course. "
@@ -72,29 +71,35 @@ def call_gemini(api_key, user_input, commit_msg, diff_content):
     }
 
     last_error = ""
-    for model in models:
-        url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={api_key}"
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"}
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=30) as response:
-                res_data = json.loads(response.read().decode("utf-8"))
-                reply = res_data["candidates"][0]["content"]["parts"][0]["text"]
-                return reply
-        except urllib.error.HTTPError as e:
-            err_msg = e.read().decode("utf-8", errors="replace")
-            last_error = f"HTTP {e.code} on {model}: {err_msg}"
-            print(f"Model {model} failed, trying next...")
-            continue
-        except Exception as e:
-            last_error = f"Error on {model}: {str(e)}"
-            print(f"Model {model} error: {last_error}, trying next...")
-            continue
+    # Try up to 2 rounds across models with backoff on 503/429
+    for attempt in range(2):
+        for model in models:
+            url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={api_key}"
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=45) as response:
+                    res_data = json.loads(response.read().decode("utf-8"))
+                    reply = res_data["candidates"][0]["content"]["parts"][0]["text"]
+                    return reply
+            except urllib.error.HTTPError as e:
+                err_msg = e.read().decode("utf-8", errors="replace")
+                last_error = f"HTTP {e.code} on {model}: {err_msg}"
+                print(f"Attempt {attempt+1}: {model} failed with {e.code}, waiting 2 seconds before retry...")
+                import time
+                time.sleep(2)
+                continue
+            except Exception as e:
+                last_error = f"Error on {model}: {str(e)}"
+                print(f"Attempt {attempt+1}: {model} exception: {last_error}, retrying...")
+                import time
+                time.sleep(1)
+                continue
 
-    return f"⚠️ Gemini API Error: {last_error}"
+    return f"⚠️ Gemini API Geçici Yoğunluk Hatası (503): Google sunucuları anlık olarak yoğun yanıt verdi.\nLütfen 10-15 saniye sonra tekrar bir commit atınız.\nDetay: {last_error}"
 
 def update_file(original_content, gemini_reply, now_str):
     if original_content:
