@@ -25,49 +25,36 @@ def read_target_content():
     if os.path.exists(TARGET_FILE):
         try:
             with open(TARGET_FILE, "r", encoding="utf-8") as f:
-                return f.read()
+                return f.read().strip()
         except Exception as e:
             return f"Error reading {TARGET_FILE}: {e}"
     return ""
 
-def extract_prompt_from_content(content):
-    marker = "## 💬 Student Prompt & Code Request"
-    if marker in content:
-        after_marker = content.split(marker)[1]
-        response_marker = "## 🤖 Gemini Response & Generated Code"
-        if response_marker in after_marker:
-            prompt_section = after_marker.split(response_marker)[0]
-        else:
-            prompt_section = after_marker
-        lines = [line.strip() for line in prompt_section.split("\n") if line.strip() and not line.strip().startswith("<!--")]
-        return "\n".join(lines)
-    return content
-
-def call_gemini(api_key, user_prompt, commit_msg, diff_content):
-    models = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.1-flash-lite"]
+def call_gemini(api_key, user_input, commit_msg, diff_content):
+    # Fastest model first: gemini-3.1-flash-lite (lowest latency), then gemini-3.5-flash
+    models = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
     
     system_instruction = (
-        "You are an expert AI teaching assistant for a student learning Mobile & Web App Development. "
-        "The student will submit prompts, code requests, and questions inside their lecturecodes.md file.\n"
+        "You are an assistant for a student studying Mobile and Web Development. "
+        "The student will write questions, code prompts, or requests directly in their file. "
         "RULES FOR YOUR RESPONSE:\n"
-        "1. When the student asks you to write code, provide clean, beginner-friendly HTML, CSS, and JavaScript "
-        "(or basic mobile layouts). The appearance should be simple, clean, entry-level, and easy to understand.\n"
-        "2. Avoid overwhelming the student with overly complex libraries, complex build tools, or dense enterprise code.\n"
-        "3. Provide clear, supportive, educational explanations of how the code works.\n"
-        "4. Format your code cleanly in markdown code blocks with comments explaining each part."
+        "1. When the student asks for code, generate clean, beginner-friendly HTML, CSS, JavaScript, or mobile UI code. "
+        "Keep the styling and layout simple, entry-level, clean, and easily understandable for a beginner.\n"
+        "2. Keep explanations concise, clear, and focused on how the code works.\n"
+        "3. Provide direct code blocks with helpful comments."
     )
 
-    full_text = (
-        f"{system_instruction}\n\n"
-        f"--- STUDENT REQUEST CONTEXT ---\n"
-        f"Commit Message: {commit_msg}\n\n"
-        f"Student Prompt / Request:\n{user_prompt}\n\n"
-    )
+    prompt_parts = [system_instruction, ""]
+    if commit_msg:
+        prompt_parts.append(f"Commit Message: {commit_msg}")
+    if user_input:
+        prompt_parts.append(f"Student Input in {TARGET_FILE}:\n{user_input}")
+    elif diff_content:
+        prompt_parts.append(f"Student Changes (Diff):\n```diff\n{diff_content[:4000]}\n```")
+    else:
+        prompt_parts.append("The student made a commit to request code assistance.")
 
-    if diff_content:
-        max_diff = 6000
-        truncated_diff = diff_content[:max_diff]
-        full_text += f"Recent Git Diff in {TARGET_FILE}:\n```diff\n{truncated_diff}\n```\n"
+    full_text = "\n\n".join(prompt_parts)
 
     payload = {
         "contents": [
@@ -88,76 +75,48 @@ def call_gemini(api_key, user_prompt, commit_msg, diff_content):
             headers={"Content-Type": "application/json"}
         )
         try:
-            with urllib.request.urlopen(req, timeout=75) as response:
+            with urllib.request.urlopen(req, timeout=30) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
                 reply = res_data["candidates"][0]["content"]["parts"][0]["text"]
                 return reply
         except urllib.error.HTTPError as e:
             err_msg = e.read().decode("utf-8", errors="replace")
             last_error = f"HTTP {e.code} on {model}: {err_msg}"
-            print(f"Warning: {model} failed with {last_error}, trying next model...")
+            print(f"Model {model} failed, trying next...")
             continue
         except Exception as e:
             last_error = f"Error on {model}: {str(e)}"
-            print(f"Warning: {model} exception: {last_error}, trying next model...")
+            print(f"Model {model} error: {last_error}, trying next...")
             continue
 
-    return f"⚠️ Unable to reach Gemini API after trying multiple models.\nDetails: {last_error}"
+    return f"⚠️ Gemini API Error: {last_error}"
 
-def update_lecturecodes_file(full_content, gemini_reply, commit_msg, now_str):
-    response_section_header = "## 🤖 Gemini Response & Generated Code"
-    
-    new_response_block = (
-        f"{response_section_header}\n\n"
-        f"> ⏱️ **Generated at:** {now_str}  \n"
-        f"> 📌 **In response to commit:** `{commit_msg}`\n\n"
-        f"{gemini_reply}\n\n"
-        f"---\n"
-    )
-
-    if response_section_header in full_content:
-        # Keep everything before response_section_header, and replace/append the new response
-        prefix = full_content.split(response_section_header)[0]
-        updated_content = prefix.rstrip() + "\n\n" + new_response_block
+def update_file(original_content, gemini_reply, now_str):
+    if original_content:
+        updated = f"{original_content}\n\n---\n\n### 🤖 Gemini Response ({now_str})\n\n{gemini_reply}\n"
     else:
-        updated_content = full_content.rstrip() + "\n\n---\n\n" + new_response_block
+        updated = f"# 🤖 Gemini Response ({now_str})\n\n{gemini_reply}\n"
 
     with open(TARGET_FILE, "w", encoding="utf-8") as f:
-        f.write(updated_content)
+        f.write(updated)
 
 def main():
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    commit_msg = os.environ.get("COMMIT_MSG", "Update code and prompt").strip()
+    commit_msg = os.environ.get("COMMIT_MSG", "Update lecturecodes").strip()
     now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
-    if not os.path.exists(TARGET_FILE):
-        print(f"Error: {TARGET_FILE} not found!")
-        sys.exit(0)
-
-    full_content = read_target_content()
-
     if not api_key:
-        error_msg = (
-            "⚠️ **Missing `GEMINI_API_KEY` Secret!**\n\n"
-            "To enable automatic Gemini code responses on commit:\n"
-            "1. Go to repository **Settings > Secrets and variables > Actions**\n"
-            "2. Add a new secret named `GEMINI_API_KEY` with your Gemini API Key.\n"
-            "3. Make a commit in `lecturecodes.md` to trigger the assistant!"
-        )
-        update_lecturecodes_file(full_content, error_msg, commit_msg, now_str)
-        print("GEMINI_API_KEY is not set.")
+        with open(TARGET_FILE, "w", encoding="utf-8") as f:
+            f.write("⚠️ Missing GEMINI_API_KEY secret in repository settings.\n")
         return
 
-    full_content = read_target_content()
-    user_prompt = extract_prompt_from_content(full_content)
-    diff_content = get_git_diff()
+    content = read_target_content()
+    diff = get_git_diff()
 
-    print(f"Prompt extracted: {user_prompt[:120]}...")
     print("Calling Gemini API...")
-
-    gemini_reply = call_gemini(api_key, user_prompt, commit_msg, diff_content)
-    update_lecturecodes_file(full_content, gemini_reply, commit_msg, now_str)
-    print(f"Successfully updated {TARGET_FILE} with Gemini response!")
+    reply = call_gemini(api_key, content, commit_msg, diff)
+    update_file(content, reply, now_str)
+    print("Done! Response written to " + TARGET_FILE)
 
 if __name__ == "__main__":
     main()
