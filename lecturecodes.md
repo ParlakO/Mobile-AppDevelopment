@@ -10,7 +10,7 @@ Whenever you edit the prompt section below and commit, Gemini will analyze your 
 
 A simple, beginner-friendly component demonstrating a clean mobile viewport layout:
 
-```html
+`html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -66,15 +66,15 @@ A simple, beginner-friendly component demonstrating a clean mobile viewport layo
   </div>
 </body>
 </html>
-```
+`
 
 ---
 
 ## 💬 Student Prompt & Code Request
 <!-- Write your prompt, question, or code request below and commit -->
-Please write a simple beginner-friendly HTML and CSS login screen designed for a mobile phone view with basic input fields and a submit button.
+Can you write a beginner-friendly HTML and CSS code for a simple mobile phone login screen? Keep the design basic and clean with email, password fields, and a login button.
 
 ---
 
 ## 🤖 Gemini Response & Generated Code
-*(On your commit, Gemini will generate clean, beginner-level HTML/CSS and mobile layout code and append its response right here.)*
+*(Waiting for automated Gemini commit...)*
