@@ -1,1 +1,0 @@
-bir kullanıcı database oluşture 10 kiş,il erkekse mavi renk olsun kutucuk her isime ayrı kutucuk en son hobıleriniz neler diye sor checkbox ekle sonra bölüm sor radio button olsun çok giriş seviyesi olsun 
