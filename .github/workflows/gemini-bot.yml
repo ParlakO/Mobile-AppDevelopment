@@ -1,51 +1,48 @@
-name: Gemini Commit Reviewer & Assistant
+name: Gemini Lecture Codes Assistant
 
 on:
   push:
     branches:
       - main
       - master
-    paths-ignore:
-      - 'response.md'
-      - 'chat_history.md'
-      - '.github/**'
+    paths:
+      - 'lecturecodes.md'
 
 permissions:
   contents: write
 
 jobs:
-  gemini-response:
-    # github-actions[bot] tarafından atılan veya [skip ci] içeren commitleri işleme almayarak sonsuz döngüyü engeller
+  gemini-reply:
     if: github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip ci]')
     runs-on: ubuntu-latest
 
     steps:
-      - name: Kodu Çek (Checkout)
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Python Ortamını Hazırla
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Gemini Botunu Çalıştır
+      - name: Execute Gemini Bot
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           python .github/scripts/gemini_bot.py
 
-      - name: Yanıtı Geri Commit ve Push Et
+      - name: Commit & Push Updated lecturecodes.md
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add response.md chat_history.md
+          git add lecturecodes.md
           if git diff --staged --quiet; then
-            echo "Herhangi bir değişiklik yok, commit atlanıyor."
+            echo "No changes detected in lecturecodes.md"
           else
-            git commit -m "🤖 [Gemini AI] Otomatik Yanıt [skip ci]"
+            git commit -m "🤖 [Gemini AI] Code & Response Update [skip ci]"
             git push origin HEAD:${{ github.ref_name }}
           fi
