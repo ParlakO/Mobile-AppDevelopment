@@ -1,18 +1,6 @@
-# 📱 Mobile App Development — Comprehensive Lecture Notes (Weeks 1–6)
-*Course Reference: Mobile App Development (based on syllabus & lectures from W1 to W6)*  
-*Student Notes & Key Concept Summaries — 100% English Reference*
+#  Mobile App Development 
 
----
 
-## 📑 Table of Contents
-1. [Weeks 1 & 2: JavaScript Fundamentals for Mobile & Web Development](#weeks-1--2-javascript-fundamentals-for-mobile--web-development)
-2. [Week 3: React Fundamentals & Component Architecture](#week-3-react-fundamentals--component-architecture)
-3. [Week 4: Introduction to Mobile Development with React Native & Expo](#week-4-introduction-to-mobile-development-with-react-native--expo)
-4. [Weeks 5 & 6: Core React Native Mobile UI Components & Layouts](#weeks-5--6-core-react-native-mobile-ui-components--layouts)
-
----
-
-## Weeks 1 & 2: JavaScript Fundamentals for Mobile & Web Development
 
 ### 1. JavaScript Runtime & Execution Environments
 - **Browser vs. Standalone (Node.js):**
