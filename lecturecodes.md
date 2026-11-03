@@ -1,39 +1,19 @@
-create a simple react app that displayts a welcome message and a button 
-a: display the text "welcome to {your name} " usıng a text component apply inline styling to make the text blue bold and 24 pixels
-b:create a button labeled click me using touchable opacity define its background color padding and border radius using stylesheet.create()
-c:create an external js file named mesaages.js containing a function called getmessage() that returns the string hello from external js export this function and import into app.js 
-d:when the user presses the click me button call the imported getmessage function and display the returned message on the screen
-
-make it so easy and start level easy looking
-
----
-
-### 🤖 Gemini Response (2026-11-03 08:27:04 UTC)
-
-Hello! Here is a simple, beginner-friendly solution designed for your React Native lab work on Expo Snack.
-
-Since Expo Snack allows you to create multiple files, we will create two files: `messages.js` and `App.js`.
-
----
-
-### File 1: `messages.js`
-*Create a new file named `messages.js` in Expo Snack (click the `+` icon next to files) and paste this code:*
-
-```javascript
 // messages.js
 
 // Requirement C: Function that returns a string and is exported
 export function getMessage() {
   return "Hello from external JS";
 }
-```
 
----
 
-### File 2: `App.js`
-*Paste this code into your main `App.js` file:*
 
-```javascript
+
+
+
+
+
+
+
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
 
@@ -94,14 +74,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#333333',
   },
-});
-```
-
----
-
-### Explanation of How It Works:
-
-1. **Requirement A (Inline Styling)**: We styled the `<Text>` directly using `style={{ color: 'blue', fontWeight: 'bold', fontSize: 24 }}` without using `StyleSheet`. Replace `"Alex"` with your own name!
-2. **Requirement B (TouchableOpacity & StyleSheet)**: We created a button using `TouchableOpacity`. Its design (`backgroundColor`, `padding`, and `borderRadius`) is managed inside `StyleSheet.create()`.
-3. **Requirement C (External File)**: `messages.js` contains `getMessage()`. We export it from `messages.js` and import it at the top of `App.js` using `import { getMessage } from './messages';`.
-4. **Requirement D (Button Action)**: When the user presses the button, `handlePress` calls `getMessage()` and updates `displayedMessage` using React's `useState` hook, rendering the message on the screen.
+}); expo snackde çalışsın english
